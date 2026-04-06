@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
 
     const deals = dealsRes.data.map((deal: any) => {
       const stage = deal.Stage || "New Enquiry";
-      const stageIndex = STAGE_ORDER.indexOf(stage);
+      const stageIndex = Math.max(0, STAGE_ORDER.indexOf(stage));
 
       return {
         id: deal.id,
