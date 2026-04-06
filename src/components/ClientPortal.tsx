@@ -1008,7 +1008,7 @@ function DealCard({ deal, authHeaders, onRefresh, onTabChange }: { deal: Deal; a
       </button>
 
       {/* Brief + booking section */}
-      {needsAction && <BriefSection deal={deal} authHeaders={authHeaders} onRefresh={onRefresh} />
+      {needsAction && <BriefSection deal={deal} authHeaders={authHeaders} onRefresh={onRefresh} />}
     </div>
   );
 }
