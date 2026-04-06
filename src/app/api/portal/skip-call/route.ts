@@ -2,7 +2,7 @@
  * POST /api/portal/skip-call
  *
  * Moves the client's deal stage from "New Enquiry" or "Discovery Call Booked"
- * directly to "Feasibility Review" — skipping the discovery call.
+ * directly to "Initial Brief" — skipping the discovery call.
  * Requires Authorization: Bearer <session_token> header.
  */
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     }
 
     await crmPut(`Deals/${dealId}`, {
-      data: [{ Stage: "Feasibility Review" }],
+      data: [{ Stage: "Initial Brief" }],
     });
 
     return NextResponse.json({ success: true });

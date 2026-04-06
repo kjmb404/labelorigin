@@ -13,7 +13,7 @@ import { crmSearch, crmGet } from "@/lib/zoho";
 const STAGE_ORDER = [
   "New Enquiry",
   "Discovery Call Booked",
-  "Feasibility Review",
+  "Initial Brief",
   "Proposal Sent",
   "Proposal Accepted",
   "Sample Development",
@@ -28,7 +28,7 @@ const STAGE_ORDER = [
 const STAGE_PERCENT: Record<string, number> = {
   "New Enquiry": 0,
   "Discovery Call Booked": 5,
-  "Feasibility Review": 10,
+  "Initial Brief": 10,
   "Proposal Sent": 25,
   "Proposal Accepted": 35,
   "Sample Development": 45,

@@ -269,7 +269,7 @@ const BLENDS = [
 const STAGE_ORDER = [
   "New Enquiry",
   "Discovery Call Booked",
-  "Feasibility Review",
+  "Initial Brief",
   "Proposal Sent",
   "Proposal Accepted",
   "Sample Development",
@@ -436,7 +436,7 @@ function SkipCallBanner({ dealId, authHeaders, onRefresh }: { dealId: string; au
   const [done, setDone]       = useState(false);
 
   const handleSkip = async () => {
-    if (!confirm("Skip the discovery call and go straight to Feasibility Review? Our team will be in touch shortly.")) return;
+    if (!confirm("Skip the discovery call and go straight to Initial Brief? Our team will be in touch shortly.")) return;
     setLoading(true);
     try {
       const res = await fetch("/api/portal/skip-call", {
@@ -804,7 +804,7 @@ function BriefSection({ deal, authHeaders, onRefresh }: { deal: Deal; authHeader
   };
 
   const handleSkip = async () => {
-    if (!confirm("Skip the discovery call and go straight to Feasibility Review? Our team will be in touch shortly.")) return;
+    if (!confirm("Skip the discovery call and go straight to Initial Brief? Our team will be in touch shortly.")) return;
     setSkipping(true);
     try {
       const res = await fetch("/api/portal/skip-call", {
@@ -985,7 +985,7 @@ function BriefSection({ deal, authHeaders, onRefresh }: { deal: Deal; authHeader
 // ─── Deal card (overview — compact progress + brief) ──────────────────────────
 
 function DealCard({ deal, authHeaders, onRefresh, onTabChange }: { deal: Deal; authHeaders: any; onRefresh: () => void; onTabChange: (t: TabId) => void }) {
-  const needsAction = deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked" || deal.stage === "Feasibility Review";
+  const needsAction = deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked" || deal.stage === "Initial Brief";
 
   return (
     <div className="rounded-2xl border border-[#d2d2d7] bg-white overflow-hidden">
@@ -1229,8 +1229,8 @@ function OrdersTab({ deals, authHeaders, onRefresh }: { deals: Deal[]; authHeade
               </div>
             )}
 
-            {/* Pre-call brief — New Enquiry / Discovery Call Booked / Feasibility Review */}
-            {(deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked" || deal.stage === "Feasibility Review") && (
+            {/* Pre-call brief — New Enquiry / Discovery Call Booked / Initial Brief */}
+            {(deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked" || deal.stage === "Initial Brief") && (
               <BriefSection deal={deal} authHeaders={authHeaders} onRefresh={onRefresh} />
             )}
           </div>

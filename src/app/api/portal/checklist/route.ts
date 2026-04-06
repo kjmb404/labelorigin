@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifySessionJWT } from "@/lib/magic-link";
 import { crmGet, crmPost, crmPut, crmSearch, slackPost } from "@/lib/zoho";
+import { sendBriefAcknowledgementEmail } from "@/lib/email";
 
 const SLACK_DEAL_UPDATES =
   "https://hooks.slack.com/services/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";
@@ -34,13 +35,23 @@ export async function POST(req: NextRequest) {
     const dealSearch = await crmSearch(
       "Deals",
       `(Contact_Name.id:equals:${session.contactId})`,
-      "id,Deal_Name,Stage"
+      "id,Deal_Name,Stage,Contact_Name"
     );
     const ownedDeal = dealSearch?.data?.find((d: any) => d.id === dealId);
     if (!ownedDeal) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     const currentStage: string = ownedDeal.Stage || "New Enquiry";
+
+    // Fetch contact email for acknowledgement
+    const contactId = ownedDeal.Contact_Name?.id;
+    let contactEmail = "";
+    let contactName = "";
+    if (contactId) {
+      const contactRes = await crmGet(`Contacts/${contactId}?fields=Email,Full_Name`);
+      contactEmail = contactRes?.data?.[0]?.Email || "";
+      contactName  = contactRes?.data?.[0]?.Full_Name || "";
+    }
 
     // Format checklist as a readable note
     const lines = [
@@ -68,12 +79,15 @@ export async function POST(req: NextRequest) {
     const noteContent = lines.join("\n");
 
     // 1. Update Project_Notes + all dedicated custom fields on the deal record
-    const advanceStage = false; // Stage is managed manually — brief submission notifies team via Slack
+    // Auto-advance to Initial Brief if currently at New Enquiry or Discovery Call Booked
+    const PRE_BRIEF_STAGES = ["New Enquiry", "Discovery Call Booked"];
+    const advanceToInitialBrief = PRE_BRIEF_STAGES.includes(currentStage);
 
     await crmPut(`Deals/${dealId}`, {
       data: [
         {
           Project_Notes: noteContent,
+          ...(advanceToInitialBrief ? { Stage: "Initial Brief" } : {}),
           Brief_Product_Name: answers.product_name || null,
           Brief_Health_Benefit: answers.health_benefit || null,
           Brief_Target_Consumer: answers.target_consumer || null,
@@ -125,10 +139,10 @@ export async function POST(req: NextRequest) {
             { type: "mrkdwn", text: `*Formula status:* ${answers.existing_formula || "Not provided"}` },
           ],
         },
-        ...(currentStage === "Feasibility Review" ? [{
+        {
           type: "section" as const,
-          text: { type: "mrkdwn" as const, text: "👉 *Action needed:* Brief received at Feasibility Review — review answers and send proposal when ready." },
-        }] : []),
+          text: { type: "mrkdwn" as const, text: advanceToInitialBrief ? "✅ *Deal moved to Initial Brief* — review answers and send proposal when ready." : "📋 *Brief updated* — client was already at Initial Brief stage." },
+        },
         {
           type: "actions",
           elements: [
@@ -142,6 +156,11 @@ export async function POST(req: NextRequest) {
         },
       ],
     });
+
+    // 4. Acknowledgement email to client
+    if (contactEmail) {
+      await sendBriefAcknowledgementEmail(contactEmail, contactName);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

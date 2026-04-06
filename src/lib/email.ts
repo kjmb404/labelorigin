@@ -233,6 +233,95 @@ export async function sendBookingConfirmedEmail(
   return { success: true };
 }
 
+export async function sendBriefAcknowledgementEmail(
+  toEmail: string,
+  name: string,
+): Promise<{ success: boolean }> {
+  const firstName = name?.split(" ")[0] || name || "";
+  const siteUrl = process.env.SITE_URL || "https://labelorigin.com";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #d2d2d7;">
+          <tr>
+            <td style="padding:32px 40px 24px;border-bottom:1px solid #f5f5f7;">
+              <p style="margin:0;font-size:15px;font-weight:600;color:#1d1d1f;letter-spacing:-0.01em;">LABEL ORIGIN</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:36px 40px;">
+              <p style="margin:0 0 16px;font-size:24px;font-weight:600;color:#1d1d1f;letter-spacing:-0.02em;">Brief received.</p>
+              <p style="margin:0 0 8px;font-size:15px;color:#86868b;line-height:1.6;">Hi ${firstName},</p>
+              <p style="margin:0 0 32px;font-size:15px;color:#86868b;line-height:1.6;">
+                Thank you for completing your pre-call brief. Our team will review your answers and come back to you with a tailored proposal shortly.
+              </p>
+              <p style="margin:0 0 32px;font-size:15px;color:#86868b;line-height:1.6;">
+                In the meantime, you can log into your portal to check the status of your enquiry.
+              </p>
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:12px;background:#0071e3;">
+                    <a href="${siteUrl}/login"
+                       style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:500;color:#ffffff;text-decoration:none;letter-spacing:-0.01em;">
+                      View your portal →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 40px;border-top:1px solid #f5f5f7;">
+              <p style="margin:0;font-size:12px;color:#86868b;line-height:1.5;">
+                Label Origin Ltd · UK Contract Manufacturer · ISO9001 Accredited
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.log(`[brief ack] RESEND_API_KEY not set — email not sent to ${toEmail}`);
+    return { success: false };
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Label Origin <onboarding@resend.dev>",
+      to:   [toEmail],
+      subject: "We've received your brief — our team will be in touch",
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    console.error("[brief ack] Resend error:", await res.text());
+    return { success: false };
+  }
+
+  return { success: true };
+}
+
 export async function sendFollowUpEmail(
   toEmail: string,
   name: string,
