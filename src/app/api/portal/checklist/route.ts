@@ -68,14 +68,12 @@ export async function POST(req: NextRequest) {
     const noteContent = lines.join("\n");
 
     // 1. Update Project_Notes + all dedicated custom fields on the deal record
-    // If submitted at Feasibility Review, auto-advance to Proposal Sent
-    const advanceStage = currentStage === "Feasibility Review";
+    const advanceStage = false; // Stage is managed manually — brief submission notifies team via Slack
 
     await crmPut(`Deals/${dealId}`, {
       data: [
         {
           Project_Notes: noteContent,
-          ...(advanceStage ? { Stage: "Proposal Sent" } : {}),
           Brief_Product_Name: answers.product_name || null,
           Brief_Health_Benefit: answers.health_benefit || null,
           Brief_Target_Consumer: answers.target_consumer || null,
@@ -127,9 +125,9 @@ export async function POST(req: NextRequest) {
             { type: "mrkdwn", text: `*Formula status:* ${answers.existing_formula || "Not provided"}` },
           ],
         },
-        ...(advanceStage ? [{
+        ...(currentStage === "Feasibility Review" ? [{
           type: "section" as const,
-          text: { type: "mrkdwn" as const, text: "✅ *Deal automatically advanced to Proposal Sent* — brief answers qualify. Review and send proposal." },
+          text: { type: "mrkdwn" as const, text: "👉 *Action needed:* Brief received at Feasibility Review — review answers and send proposal when ready." },
         }] : []),
         {
           type: "actions",
@@ -145,7 +143,7 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    return NextResponse.json({ success: true, advanced: advanceStage });
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error("[checklist] Error:", error?.message ?? error);
     return NextResponse.json({ error: "Failed to save checklist" }, { status: 500 });
