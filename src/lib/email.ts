@@ -571,6 +571,145 @@ export async function sendProposalEmail(
   return { success: true };
 }
 
+export async function sendDepositInvoiceEmail(
+  toEmail: string,
+  name: string,
+  deal: {
+    dealName: string;
+    invoiceNumber: string;
+    invoiceTotal: number;
+    dueDate: string;
+    currency: string;
+    invoiceUrl?: string | null;
+  }
+): Promise<{ success: boolean }> {
+  const firstName = name?.split(" ")[0] || name || "";
+  const siteUrl = process.env.SITE_URL || "https://labelorigin.com";
+  const portalUrl = deal.invoiceUrl || `${siteUrl}/login`;
+
+  const formattedTotal = `${deal.currency} ${Number(deal.invoiceTotal).toLocaleString("en-GB", { minimumFractionDigits: 2 })}`;
+  const formattedDue = deal.dueDate
+    ? new Date(deal.dueDate).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    : "";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #d2d2d7;">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:32px 40px 24px;border-bottom:1px solid #f5f5f7;">
+              <p style="margin:0;font-size:15px;font-weight:600;color:#1d1d1f;letter-spacing:-0.01em;">LABEL ORIGIN</p>
+            </td>
+          </tr>
+
+          <!-- Banner -->
+          <tr>
+            <td style="padding:0;">
+              <div style="background:#1d1d1f;padding:20px 40px;">
+                <p style="margin:0;font-size:12px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:0.08em;text-transform:uppercase;">Deposit invoice ready</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 40px;">
+              <p style="margin:0 0 16px;font-size:24px;font-weight:600;color:#1d1d1f;letter-spacing:-0.02em;">${deal.dealName}</p>
+              <p style="margin:0 0 8px;font-size:15px;color:#86868b;line-height:1.6;">Hi ${firstName},</p>
+              <p style="margin:0 0 32px;font-size:15px;color:#86868b;line-height:1.6;">
+                Your 50% deposit invoice is ready. Once paid, we'll begin production immediately.
+              </p>
+
+              <!-- Invoice summary -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 32px;border-radius:12px;overflow:hidden;border:1px solid #d2d2d7;">
+                <tr style="background:#f9f9f9;">
+                  <td style="padding:10px 16px;font-size:13px;color:#86868b;">Invoice</td>
+                  <td style="padding:10px 16px;font-size:13px;font-weight:600;color:#1d1d1f;text-align:right;">${deal.invoiceNumber}</td>
+                </tr>
+                <tr style="background:#ffffff;">
+                  <td style="padding:10px 16px;font-size:13px;color:#86868b;">Amount due</td>
+                  <td style="padding:10px 16px;font-size:13px;font-weight:600;color:#1d1d1f;text-align:right;">${formattedTotal}</td>
+                </tr>
+                ${formattedDue ? `
+                <tr style="background:#f9f9f9;">
+                  <td style="padding:10px 16px;font-size:13px;color:#86868b;">Due date</td>
+                  <td style="padding:10px 16px;font-size:13px;font-weight:600;color:#1d1d1f;text-align:right;">${formattedDue}</td>
+                </tr>` : ""}
+              </table>
+
+              <!-- CTA -->
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:12px;background:#0071e3;">
+                    <a href="${portalUrl}"
+                       style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:500;color:#ffffff;text-decoration:none;letter-spacing:-0.01em;">
+                      View &amp; pay invoice →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:20px 0 0;font-size:13px;color:#86868b;line-height:1.6;">
+                You can also view this invoice in your <a href="${siteUrl}/login" style="color:#0071e3;text-decoration:none;">client portal</a> under the Invoices tab.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 40px;border-top:1px solid #f5f5f7;">
+              <p style="margin:0;font-size:12px;color:#86868b;line-height:1.5;">
+                Label Origin Ltd · UK Contract Manufacturer · ISO9001 Accredited
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.log(`[deposit invoice] RESEND_API_KEY not set — email not sent to ${toEmail}`);
+    return { success: false };
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Label Origin <onboarding@resend.dev>",
+      to:   [toEmail],
+      subject: `Deposit invoice ready — ${deal.dealName}`,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    console.error("[deposit invoice] Resend error:", await res.text());
+    return { success: false };
+  }
+
+  return { success: true };
+}
+
 export async function sendMagicLinkEmail(
   toEmail: string,
   contactName: string,
