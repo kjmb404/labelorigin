@@ -834,20 +834,36 @@ function BriefSection({ deal, authHeaders, onRefresh }: { deal: Deal; authHeader
 
   return (
     <div className="border-t border-[#f5f5f7]">
-      {/* Brief header */}
-      <div className="px-6 py-4 flex items-center justify-between gap-4 bg-[#0071e3]/[0.02]">
-        <div>
-          <p className="text-[11px] font-semibold text-[#0071e3] uppercase tracking-widest mb-0.5">Pre-call brief</p>
-          <p className="text-sm font-medium text-[#1d1d1f]">Help us prepare for your call</p>
-          <p className="text-xs text-[#86868b] mt-0.5">~3 minutes · 4 short sections</p>
-        </div>
+      {/* Equal-weight action cards */}
+      <div className={`p-4 grid gap-3 ${deal.stage === "New Enquiry" ? "grid-cols-2" : "grid-cols-1"}`}>
+        {/* Book a call — New Enquiry only */}
+        {deal.stage === "New Enquiry" && (
+          <button
+            onClick={() => window.open("https://cal.eu/labelorigin/discovery-call", "_blank", "noopener,noreferrer")}
+            className="text-left rounded-xl bg-[#1d1d1f] px-5 py-4 hover:bg-[#2d2d2f] transition-colors group"
+          >
+            <p className="text-[10px] font-semibold text-white/50 uppercase tracking-widest mb-1">Discovery call</p>
+            <p className="text-sm font-semibold text-white">Book a call →</p>
+          </button>
+        )}
+        {/* Pre-call brief */}
         <button
           onClick={() => setBriefOpen((o) => !o)}
-          className="shrink-0 h-8 px-4 rounded-xl bg-[#0071e3] text-white text-xs font-semibold hover:bg-[#0077ed] transition-colors"
+          className="text-left rounded-xl bg-[#0071e3] px-5 py-4 hover:bg-[#0077ed] transition-colors"
         >
-          {briefOpen ? "Collapse" : "Start →"}
+          <p className="text-[10px] font-semibold text-white/60 uppercase tracking-widest mb-1">Pre-call brief</p>
+          <p className="text-sm font-semibold text-white">{briefOpen ? "Collapse ↑" : "Start brief →"}</p>
         </button>
       </div>
+
+      {/* Skip link — New Enquiry only */}
+      {deal.stage === "New Enquiry" && !briefOpen && (
+        <div className="px-4 pb-3 text-center">
+          <button onClick={handleSkip} disabled={skipping} className="text-xs text-[#86868b] hover:text-[#1d1d1f] underline underline-offset-2 transition-colors disabled:opacity-50">
+            {skipping ? "Updating…" : "Already have a clear brief? Skip the call →"}
+          </button>
+        </div>
+      )}
 
       {/* Expanded brief form */}
       {briefOpen && (
@@ -961,15 +977,6 @@ function BriefSection({ deal, authHeaders, onRefresh }: { deal: Deal; authHeader
         </div>
       )}
 
-      {/* Book call / skip — New Enquiry only */}
-      {deal.stage === "New Enquiry" && (
-        <div className={`px-6 py-4 flex items-center gap-4 ${briefOpen ? "border-t border-[#f5f5f7]" : ""}`}>
-          <CalBookingButton />
-          <button onClick={handleSkip} disabled={skipping} className="text-sm text-[#86868b] hover:text-[#1d1d1f] underline underline-offset-2 transition-colors disabled:opacity-50">
-            {skipping ? "Updating…" : "Skip the call →"}
-          </button>
-        </div>
-      )}
     </div>
   );
 }
@@ -977,7 +984,7 @@ function BriefSection({ deal, authHeaders, onRefresh }: { deal: Deal; authHeader
 // ─── Deal card (overview — compact progress + brief) ──────────────────────────
 
 function DealCard({ deal, authHeaders, onRefresh, onTabChange }: { deal: Deal; authHeaders: any; onRefresh: () => void; onTabChange: (t: TabId) => void }) {
-  const needsAction = deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked";
+  const needsAction = deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked" || deal.stage === "Feasibility Review";
 
   return (
     <div className="rounded-2xl border border-[#d2d2d7] bg-white overflow-hidden">
@@ -1221,8 +1228,8 @@ function OrdersTab({ deals, authHeaders, onRefresh }: { deals: Deal[]; authHeade
               </div>
             )}
 
-            {/* Pre-call brief — New Enquiry / Discovery Call Booked */}
-            {(deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked") && (
+            {/* Pre-call brief — New Enquiry / Discovery Call Booked / Feasibility Review */}
+            {(deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked" || deal.stage === "Feasibility Review") && (
               <BriefSection deal={deal} authHeaders={authHeaders} onRefresh={onRefresh} />
             )}
           </div>
