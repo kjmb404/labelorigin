@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { crmGet, booksGet } from "@/lib/zoho";
 import { sendDepositInvoiceEmail } from "@/lib/email";
+import { generateInvoicePDF } from "@/lib/pdf";
 
 export async function POST(req: NextRequest) {
   try {
@@ -95,6 +96,39 @@ export async function POST(req: NextRequest) {
       invoiceUrl = detail?.invoice?.invoice_url || null;
     } catch {}
 
+    // ── Generate branded PDF ───────────────────────────────────────────────
+    let pdfBuffer: Buffer | null = null;
+    try {
+      const detail = await booksGet(`invoices/${depositInv.invoice_id}`);
+      const inv = detail?.invoice;
+      pdfBuffer = await generateInvoicePDF({
+        invoiceNumber:  depositInv.invoice_number,
+        date:           depositInv.date,
+        dueDate:        depositInv.due_date,
+        referenceNumber: depositInv.reference_number,
+        currency:       depositInv.currency_code,
+        currencySymbol: inv?.currency_symbol || "£",
+        clientName:     contact.Full_Name || "",
+        clientAddress:  inv?.billing_address?.address || "",
+        lineItems: (inv?.line_items || []).map((li: any) => ({
+          name:          li.name,
+          description:   li.description,
+          quantity:      li.quantity,
+          rate:          li.rate,
+          itemTotal:     li.item_total,
+          taxPercentage: li.tax_percentage,
+        })),
+        subTotal:   inv?.sub_total  ?? depositInv.total,
+        taxTotal:   inv?.tax_total  ?? 0,
+        total:      inv?.total      ?? depositInv.total,
+        balanceDue: inv?.balance    ?? depositInv.balance,
+        notes:      inv?.notes      || "",
+        terms:      inv?.terms      || "",
+      });
+    } catch (e: any) {
+      console.warn("[webhook/deposit-invoiced] PDF generation failed:", e?.message);
+    }
+
     // ── Send email ─────────────────────────────────────────────────────────
     await sendDepositInvoiceEmail(toEmail, name, {
       dealName:      deal.Deal_Name,
@@ -103,7 +137,7 @@ export async function POST(req: NextRequest) {
       dueDate:       depositInv.due_date,
       currency:      depositInv.currency_code,
       invoiceUrl,
-    });
+    }, pdfBuffer);
 
     console.log(`[webhook/deposit-invoiced] Email sent to ${toEmail} for deal ${deal.Deal_Name}`);
     return NextResponse.json({ success: true });

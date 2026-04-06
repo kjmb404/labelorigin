@@ -581,7 +581,8 @@ export async function sendDepositInvoiceEmail(
     dueDate: string;
     currency: string;
     invoiceUrl?: string | null;
-  }
+  },
+  pdfBuffer?: Buffer | null
 ): Promise<{ success: boolean }> {
   const firstName = name?.split(" ")[0] || name || "";
   const siteUrl = process.env.SITE_URL || "https://labelorigin.com";
@@ -699,6 +700,12 @@ export async function sendDepositInvoiceEmail(
       to:   [toEmail],
       subject: `Deposit invoice ready — ${deal.dealName}`,
       html,
+      ...(pdfBuffer ? {
+        attachments: [{
+          filename: `Invoice-${deal.invoiceNumber}.pdf`,
+          content: pdfBuffer.toString("base64"),
+        }],
+      } : {}),
     }),
   });
 
@@ -720,7 +727,8 @@ export async function sendFinalInvoiceEmail(
     dueDate: string;
     currency: string;
     invoiceUrl?: string | null;
-  }
+  },
+  pdfBuffer?: Buffer | null
 ): Promise<{ success: boolean }> {
   const firstName = name?.split(" ")[0] || name || "";
   const siteUrl = process.env.SITE_URL || "https://labelorigin.com";
@@ -838,6 +846,12 @@ export async function sendFinalInvoiceEmail(
       to:   [toEmail],
       subject: `Final balance invoice ready — ${deal.dealName}`,
       html,
+      ...(pdfBuffer ? {
+        attachments: [{
+          filename: `Invoice-${deal.invoiceNumber}.pdf`,
+          content: pdfBuffer.toString("base64"),
+        }],
+      } : {}),
     }),
   });
 
