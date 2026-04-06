@@ -424,6 +424,153 @@ export async function sendFollowUpEmail(
   return { success: true };
 }
 
+export async function sendProposalEmail(
+  toEmail: string,
+  name: string,
+  deal: {
+    dealName: string;
+    quoteTotal?: number | null;
+    wholesalePrice?: number | null;
+    suggestedRrp?: number | null;
+    moq?: number | null;
+    clientMargin?: number | null;
+    productFormat?: string | null;
+  }
+): Promise<{ success: boolean }> {
+  const firstName = name?.split(" ")[0] || name || "";
+  const siteUrl = process.env.SITE_URL || "https://labelorigin.com";
+
+  const fmtGbp = (v?: number | null) =>
+    v != null ? `£${Number(v).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : null;
+
+  const hasPricing = deal.wholesalePrice || deal.quoteTotal;
+
+  const pricingRows = [
+    deal.wholesalePrice  && { label: "Cost per unit",   value: fmtGbp(deal.wholesalePrice)! },
+    deal.suggestedRrp    && { label: "Suggested RRP",   value: fmtGbp(deal.suggestedRrp)! },
+    deal.clientMargin    && { label: "Your margin",     value: `${deal.clientMargin}%` },
+    deal.moq             && { label: "Min. order qty",  value: `${Number(deal.moq).toLocaleString()} units` },
+    deal.quoteTotal      && { label: "Order total",     value: fmtGbp(deal.quoteTotal)! },
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  const pricingTableHtml = hasPricing ? `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 32px;border-radius:12px;overflow:hidden;border:1px solid #d2d2d7;">
+      ${pricingRows.map((r, i) => `
+        <tr style="background:${i % 2 === 0 ? "#f9f9f9" : "#ffffff"};">
+          <td style="padding:10px 16px;font-size:13px;color:#86868b;">${r.label}</td>
+          <td style="padding:10px 16px;font-size:13px;font-weight:600;color:#1d1d1f;text-align:right;">${r.value}</td>
+        </tr>
+      `).join("")}
+    </table>
+  ` : "";
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body style="margin:0;padding:0;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:20px;overflow:hidden;border:1px solid #d2d2d7;">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:32px 40px 24px;border-bottom:1px solid #f5f5f7;">
+              <p style="margin:0;font-size:15px;font-weight:600;color:#1d1d1f;letter-spacing:-0.01em;">LABEL ORIGIN</p>
+            </td>
+          </tr>
+
+          <!-- Proposal ready banner -->
+          <tr>
+            <td style="padding:0;">
+              <div style="background:#0071e3;padding:20px 40px;">
+                <p style="margin:0;font-size:12px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.08em;text-transform:uppercase;">Your proposal is ready</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 40px;">
+              <p style="margin:0 0 16px;font-size:24px;font-weight:600;color:#1d1d1f;letter-spacing:-0.02em;">
+                ${deal.dealName}
+              </p>
+              <p style="margin:0 0 8px;font-size:15px;color:#86868b;line-height:1.6;">
+                Hi ${firstName},
+              </p>
+              <p style="margin:0 0 32px;font-size:15px;color:#86868b;line-height:1.6;">
+                We've reviewed your brief${deal.productFormat ? ` for your <strong style="color:#1d1d1f;">${deal.productFormat}</strong>` : ""} and put together a tailored proposal. You can review the full details and accept directly in your portal.
+              </p>
+
+              ${pricingTableHtml}
+
+              <!-- CTA -->
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:12px;background:#0071e3;">
+                    <a href="${siteUrl}/login"
+                       style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:500;color:#ffffff;text-decoration:none;letter-spacing:-0.01em;">
+                      View your proposal →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:20px 0 0;font-size:13px;color:#86868b;line-height:1.6;">
+                Log in to your portal to review the full proposal, ask questions, or accept to begin sample development.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 40px;border-top:1px solid #f5f5f7;">
+              <p style="margin:0;font-size:12px;color:#86868b;line-height:1.5;">
+                Label Origin Ltd · UK Contract Manufacturer · ISO9001 Accredited
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.log(`[proposal] RESEND_API_KEY not set — email not sent to ${toEmail}`);
+    return { success: false };
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Label Origin <onboarding@resend.dev>",
+      to:   [toEmail],
+      subject: `Your proposal is ready — ${deal.dealName}`,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    console.error("[proposal] Resend error:", await res.text());
+    return { success: false };
+  }
+
+  return { success: true };
+}
+
 export async function sendMagicLinkEmail(
   toEmail: string,
   contactName: string,

@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
     const noteContent = lines.join("\n");
 
     // 1. Update Project_Notes + all dedicated custom fields on the deal record
-    // Auto-advance to Initial Brief if currently at New Enquiry or Discovery Call Booked
+    // Auto-advance to Feasibility Review if currently at New Enquiry or Discovery Call Booked
     const PRE_BRIEF_STAGES = ["New Enquiry", "Discovery Call Booked"];
     const advanceToInitialBrief = PRE_BRIEF_STAGES.includes(currentStage);
 
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       data: [
         {
           Project_Notes: noteContent,
-          ...(advanceToInitialBrief ? { Stage: "Initial Brief" } : {}),
+          ...(advanceToInitialBrief ? { Stage: "Feasibility Review" } : {}),
           Brief_Product_Name: answers.product_name || null,
           Brief_Health_Benefit: answers.health_benefit || null,
           Brief_Target_Consumer: answers.target_consumer || null,
@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
         },
         {
           type: "section" as const,
-          text: { type: "mrkdwn" as const, text: advanceToInitialBrief ? "✅ *Deal moved to Initial Brief* — review answers and send proposal when ready." : "📋 *Brief updated* — client was already at Initial Brief stage." },
+          text: { type: "mrkdwn" as const, text: advanceToInitialBrief ? "✅ *Deal moved to Feasibility Review* — review answers and send proposal when ready." : "📋 *Brief updated* — client was already at Feasibility Review stage." },
         },
         {
           type: "actions",

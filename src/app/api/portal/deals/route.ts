@@ -13,7 +13,7 @@ import { crmSearch, crmGet } from "@/lib/zoho";
 const STAGE_ORDER = [
   "New Enquiry",
   "Discovery Call Booked",
-  "Initial Brief",
+  "Feasibility Review",
   "Proposal Sent",
   "Proposal Accepted",
   "Sample Development",
@@ -28,7 +28,7 @@ const STAGE_ORDER = [
 const STAGE_PERCENT: Record<string, number> = {
   "New Enquiry": 0,
   "Discovery Call Booked": 5,
-  "Initial Brief": 10,
+  "Feasibility Review": 10,
   "Proposal Sent": 25,
   "Proposal Accepted": 35,
   "Sample Development": 45,
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
     const dealsRes = await crmSearch(
       "Deals",
       `(Contact_Name.id:equals:${session.contactId})`,
-      "Deal_Name,Stage,Product_Format,Quote_Total,Wholesale_Price_Per_Unit,Suggested_RRP,Market_Position,MOQ,Created_Time,Modified_Time,Closing_Date,Cost_Per_Unit,Client_Margin_Pct,Gummies_Per_Unit,Brief_Product_Name"
+      "Deal_Name,Stage,Product_Format,Quote_Total,Wholesale_Price_Per_Unit,Suggested_RRP,Market_Position,MOQ,Created_Time,Modified_Time,Closing_Date,Cost_Per_Unit,Client_Margin_Pct,Gummies_Per_Unit,Brief_Product_Name,Brief_Health_Benefit,Brief_Target_Consumer,Brief_Ingredients,Brief_Avoid,Brief_Certifications,Brief_Flavour,Brief_Sales_Channel,Brief_Has_Formula,Brief_Additional_Notes,Formula_Status,Packaging_Status,Sample_Ready,Tracking_Number,Delivery_Date,Production_Start_Date,Expected_Completion_Date,Deposit_Paid,Deposit_Amount,Units_Ordered,Deposit_Invoice_Ref,Final_Invoice_Ref"
     );
 
     if (!dealsRes?.data) {
@@ -93,6 +93,30 @@ export async function GET(req: NextRequest) {
         current_stage: stage,
         upcoming_stages: STAGE_ORDER.slice(stageIndex + 1),
         brief_submitted: !!deal.Brief_Product_Name,
+        brief_product_name: deal.Brief_Product_Name || null,
+        brief_health_benefit: deal.Brief_Health_Benefit || null,
+        brief_target_consumer: deal.Brief_Target_Consumer || null,
+        brief_ingredients: deal.Brief_Ingredients || null,
+        brief_avoid: deal.Brief_Avoid || null,
+        brief_certifications: deal.Brief_Certifications || null,
+        brief_flavour: deal.Brief_Flavour || null,
+        brief_sales_channel: deal.Brief_Sales_Channel || null,
+        brief_has_formula: deal.Brief_Has_Formula || null,
+        brief_additional_notes: deal.Brief_Additional_Notes || null,
+        // Production tracking
+        formula_status: deal.Formula_Status || null,
+        packaging_status: deal.Packaging_Status || null,
+        sample_ready: deal.Sample_Ready || null,
+        tracking_number: deal.Tracking_Number || null,
+        delivery_date: deal.Delivery_Date || null,
+        production_start: deal.Production_Start_Date || null,
+        expected_completion: deal.Expected_Completion_Date || null,
+        deposit_paid: deal.Deposit_Paid ?? null,
+        deposit_amount: deal.Deposit_Amount || null,
+        units_ordered: deal.Units_Ordered || null,
+        // Invoice linking
+        deposit_invoice_ref: deal.Deposit_Invoice_Ref || null,
+        final_invoice_ref: deal.Final_Invoice_Ref || null,
       };
     });
 

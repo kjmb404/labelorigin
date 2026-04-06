@@ -32,6 +32,31 @@ interface Deal {
   current_stage: string;
   upcoming_stages: string[];
   brief_submitted: boolean;
+  brief_product_name: string | null;
+  brief_health_benefit: string | null;
+  brief_target_consumer: string | null;
+  brief_ingredients: string | null;
+  brief_avoid: string | null;
+  brief_certifications: string[] | null;
+  brief_flavour: string | null;
+  brief_sales_channel: string | null;
+  brief_has_formula: string | null;
+  brief_additional_notes: string | null;
+  units_per_product: number | null;
+  // Production tracking
+  formula_status: string | null;
+  packaging_status: string | null;
+  sample_ready: string | null;
+  tracking_number: string | null;
+  delivery_date: string | null;
+  production_start: string | null;
+  expected_completion: string | null;
+  deposit_paid: boolean | null;
+  deposit_amount: number | null;
+  units_ordered: number | null;
+  // Invoice refs
+  deposit_invoice_ref: string | null;
+  final_invoice_ref: string | null;
 }
 
 interface Invoice {
@@ -44,6 +69,9 @@ interface Invoice {
   balance: number;
   currency: string;
   reference: string;
+  deal_id: string | null;
+  invoice_type: string | null;
+  invoice_url: string | null;
 }
 
 // ─── Catalogue data ────────────────────────────────────────────────────────────
@@ -269,7 +297,7 @@ const BLENDS = [
 const STAGE_ORDER = [
   "New Enquiry",
   "Discovery Call Booked",
-  "Initial Brief",
+  "Feasibility Review",
   "Proposal Sent",
   "Proposal Accepted",
   "Sample Development",
@@ -296,6 +324,11 @@ type TabId = (typeof TABS)[number]["id"];
 function fmt(n: number | null | undefined, decimals = 2) {
   if (n == null) return "—";
   return `£${n.toLocaleString("en-GB", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+}
+
+function fmtDate(d: string | null | undefined) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -436,7 +469,7 @@ function SkipCallBanner({ dealId, authHeaders, onRefresh }: { dealId: string; au
   const [done, setDone]       = useState(false);
 
   const handleSkip = async () => {
-    if (!confirm("Skip the discovery call and go straight to Initial Brief? Our team will be in touch shortly.")) return;
+    if (!confirm("Skip the discovery call and go straight to Feasibility Review? Our team will be in touch shortly.")) return;
     setLoading(true);
     try {
       const res = await fetch("/api/portal/skip-call", {
@@ -804,7 +837,7 @@ function BriefSection({ deal, authHeaders, onRefresh }: { deal: Deal; authHeader
   };
 
   const handleSkip = async () => {
-    if (!confirm("Skip the discovery call and go straight to Initial Brief? Our team will be in touch shortly.")) return;
+    if (!confirm("Skip the discovery call and go straight to Feasibility Review? Our team will be in touch shortly.")) return;
     setSkipping(true);
     try {
       const res = await fetch("/api/portal/skip-call", {
@@ -982,10 +1015,364 @@ function BriefSection({ deal, authHeaders, onRefresh }: { deal: Deal; authHeader
   );
 }
 
+// ─── Proposal section ─────────────────────────────────────────────────────────
+
+function ProposalSection({ deal, authHeaders, onRefresh }: { deal: Deal; authHeaders: any; onRefresh: () => void }) {
+  const [accepting, setAccepting]       = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedback, setFeedback]         = useState("");
+  const [sending, setSending]           = useState(false);
+  const [feedbackSent, setFeedbackSent] = useState(false);
+
+  const handleAccept = async () => {
+    if (!confirm("Accept this proposal and begin sample development?")) return;
+    setAccepting(true);
+    try {
+      const res = await fetch("/api/portal/accept-proposal", {
+        method: "POST",
+        headers: { ...(authHeaders as Record<string, string>), "Content-Type": "application/json" },
+        body: JSON.stringify({ dealId: deal.id }),
+      });
+      if (res.ok) onRefresh();
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  const handleFeedback = async () => {
+    if (!feedback.trim()) return;
+    setSending(true);
+    try {
+      await fetch("/api/portal/proposal-feedback", {
+        method: "POST",
+        headers: { ...(authHeaders as Record<string, string>), "Content-Type": "application/json" },
+        body: JSON.stringify({ dealId: deal.id, message: feedback }),
+      });
+      setFeedbackSent(true);
+      setFeedback("");
+      setShowFeedback(false);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  // Find lead time from catalogue data
+  const formatData = FORMATS.find((f) => f.format.toLowerCase() === deal.product_format?.toLowerCase());
+
+  return (
+    <div className="border-t border-[#0071e3]/10">
+
+      {/* Proposal ready banner */}
+      <div className="px-6 py-3.5 bg-[#0071e3]/5 flex items-center gap-2.5">
+        <div className="w-2 h-2 rounded-full bg-[#0071e3] animate-pulse shrink-0" />
+        <p className="text-sm font-medium text-[#0071e3]">Your proposal is ready to review</p>
+        <span className="ml-auto text-[10px] font-semibold bg-[#0071e3] text-white px-2 py-0.5 rounded-full shrink-0">NEW</span>
+      </div>
+
+      <div className="px-6 pt-5 pb-6 space-y-6">
+
+        {/* ── What you asked for ── */}
+        {(deal.brief_product_name || deal.brief_health_benefit || deal.brief_target_consumer || deal.brief_ingredients) && (
+          <div>
+            <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-widest mb-3">What you asked for</p>
+            <div className="rounded-2xl border border-[#f0f0f0] bg-[#fafafa] divide-y divide-[#f0f0f0]">
+              {[
+                deal.brief_product_name    && { label: "Product name",     value: deal.brief_product_name },
+                deal.brief_health_benefit  && { label: "Health benefit",   value: deal.brief_health_benefit },
+                deal.brief_target_consumer && { label: "Target consumer",  value: deal.brief_target_consumer },
+                deal.brief_ingredients     && { label: "Key ingredients",  value: deal.brief_ingredients },
+                deal.brief_avoid           && { label: "Avoid",            value: deal.brief_avoid },
+                deal.brief_flavour         && { label: "Flavour",          value: deal.brief_flavour },
+                deal.brief_sales_channel   && { label: "Sales channel",    value: deal.brief_sales_channel },
+                deal.brief_certifications?.length && { label: "Certifications", value: Array.isArray(deal.brief_certifications) ? deal.brief_certifications.join(", ") : deal.brief_certifications },
+                deal.brief_additional_notes && { label: "Notes",           value: deal.brief_additional_notes },
+              ].filter(Boolean).map((row: any) => (
+                <div key={row.label} className="px-4 py-2.5 flex gap-4">
+                  <p className="text-xs text-[#86868b] w-32 shrink-0 pt-0.5">{row.label}</p>
+                  <p className="text-sm text-[#1d1d1f] flex-1">{row.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Product spec ── */}
+        <div>
+          <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-widest mb-3">Product spec</p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[
+              deal.product_format                && { label: "Format",       value: deal.product_format },
+              formatData?.activeLoad             && { label: "Active load",  value: formatData.activeLoad },
+              formatData?.servingSize            && { label: "Serving size", value: formatData.servingSize },
+              deal.moq                           && { label: "Min. order",   value: `${Number(deal.moq).toLocaleString()} units` },
+              deal.units_per_product             && { label: "Units / SKU",  value: deal.units_per_product.toLocaleString() },
+              deal.market_position               && { label: "Positioning",  value: deal.market_position },
+            ].filter(Boolean).map((s: any) => (
+              <div key={s.label} className="rounded-xl border border-[#f0f0f0] bg-[#fafafa] px-4 py-3">
+                <p className="text-[11px] text-[#86868b] mb-1">{s.label}</p>
+                <p className="text-sm font-semibold text-[#1d1d1f]">{s.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Pricing ── */}
+        {deal.wholesale_price && (
+          <div>
+            <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-widest mb-3">Pricing</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "Cost / unit",   value: fmt(deal.wholesale_price) },
+                { label: "Suggested RRP", value: fmt(deal.suggested_rrp)   },
+                { label: "Your margin",   value: deal.client_margin ? `${deal.client_margin}%` : "—" },
+                { label: "Order total",   value: fmt(deal.quote_total, 0)  },
+              ].map((row) => (
+                <div key={row.label} className="rounded-xl border border-[#f0f0f0] bg-[#fafafa] px-4 py-3">
+                  <p className="text-[11px] text-[#86868b] mb-1">{row.label}</p>
+                  <p className="text-sm font-semibold text-[#1d1d1f]">{row.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Timeline ── */}
+        <div>
+          <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-widest mb-3">Timeline</p>
+          <div className="rounded-2xl border border-[#f0f0f0] bg-[#fafafa] divide-y divide-[#f0f0f0]">
+            {[
+              formatData?.leadTime && { label: "Estimated lead time", value: formatData.leadTime },
+              deal.closing_date    && { label: "Target completion",   value: new Date(deal.closing_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) },
+            ].filter(Boolean).map((row: any) => (
+              <div key={row.label} className="px-4 py-2.5 flex gap-4">
+                <p className="text-xs text-[#86868b] w-32 shrink-0 pt-0.5">{row.label}</p>
+                <p className="text-sm text-[#1d1d1f]">{row.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Next steps ── */}
+        <div>
+          <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-widest mb-3">What happens next</p>
+          <div className="space-y-2">
+            {[
+              { step: "1", label: "Accept this proposal", desc: "Confirm you're happy with the spec and pricing." },
+              { step: "2", label: "Sample development",   desc: "We produce a sample for your review and approval." },
+              { step: "3", label: "Deposit invoice",      desc: "50% deposit to begin full production." },
+              { step: "4", label: "Production & delivery", desc: "Your order is manufactured and shipped to you." },
+            ].map((s) => (
+              <div key={s.step} className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-[#f5f5f7] flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-[10px] font-semibold text-[#86868b]">{s.step}</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-[#1d1d1f]">{s.label}</p>
+                  <p className="text-xs text-[#86868b]">{s.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Actions ── */}
+        <div className="space-y-3 pt-1">
+          {feedbackSent ? (
+            <p className="text-sm text-green-600 font-medium py-2">✓ Feedback sent — we'll be in touch shortly.</p>
+          ) : (
+            <>
+              <button
+                onClick={handleAccept}
+                disabled={accepting}
+                className="w-full h-11 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-60 transition-colors"
+              >
+                {accepting ? "Processing…" : "✓ Accept Proposal"}
+              </button>
+
+              <button
+                onClick={() => window.open("https://cal.eu/labelorigin/discovery-call", "_blank", "noopener,noreferrer")}
+                className="w-full h-11 rounded-xl border border-[#d2d2d7] text-sm font-medium text-[#1d1d1f] hover:border-[#0071e3] hover:text-[#0071e3] transition-colors"
+              >
+                Speak to our team →
+              </button>
+
+              {!showFeedback ? (
+                <button
+                  onClick={() => setShowFeedback(true)}
+                  className="w-full text-sm text-[#86868b] hover:text-[#1d1d1f] transition-colors py-1"
+                >
+                  Something to change? Let us know →
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <textarea
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    placeholder="What would you like us to change or clarify?"
+                    rows={3}
+                    className="w-full px-3 py-2 rounded-xl border border-[#d2d2d7] text-sm text-[#1d1d1f] placeholder:text-[#d2d2d7] focus:outline-none focus:border-[#0071e3] transition-colors resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleFeedback}
+                      disabled={sending || !feedback.trim()}
+                      className="flex-1 h-9 rounded-xl bg-[#1d1d1f] text-white text-sm font-medium hover:bg-[#2d2d2f] disabled:opacity-50 transition-colors"
+                    >
+                      {sending ? "Sending…" : "Send feedback"}
+                    </button>
+                    <button
+                      onClick={() => setShowFeedback(false)}
+                      className="h-9 px-4 rounded-xl border border-[#d2d2d7] text-sm text-[#86868b] hover:text-[#1d1d1f] transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ─── Production section ───────────────────────────────────────────────────────
+
+const PRODUCTION_STAGE_SET = new Set([
+  "Sample Development", "Sample Approved", "Deposit Invoiced",
+  "In Production", "Final Balance Invoiced", "Shipped / Delivery", "Closed / Completed",
+]);
+
+function ProductionSection({ deal, invoices }: { deal: Deal; invoices: Invoice[] }) {
+
+  const linkedInvoices = invoices
+    .filter((i) => i.deal_id === deal.id)
+    .map((i) => ({ inv: i, type: i.invoice_type || "Invoice" }));
+
+  const statusItems = [
+    deal.formula_status    && { label: "Formula",   value: deal.formula_status   },
+    deal.packaging_status  && { label: "Packaging", value: deal.packaging_status },
+    deal.units_ordered     && { label: "Units ordered", value: deal.units_ordered.toLocaleString() },
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  const dateItems = [
+    deal.production_start    && { label: "Production start", value: fmtDate(deal.production_start)    },
+    deal.expected_completion && { label: "Est. completion",  value: fmtDate(deal.expected_completion) },
+    deal.sample_ready        && { label: "Sample ready",     value: fmtDate(deal.sample_ready)        },
+    deal.delivery_date       && { label: "Delivered",        value: fmtDate(deal.delivery_date)       },
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  const hasData = statusItems.length > 0 || dateItems.length > 0 || deal.tracking_number || linkedInvoices.length > 0;
+
+  return (
+    <div className="border-t border-[#f5f5f7] px-6 pb-6 pt-5 space-y-6">
+
+      {!hasData ? (
+        <p className="text-sm text-[#86868b]">Our team will update this as your order progresses.</p>
+      ) : (
+        <>
+          {/* Status grid */}
+          {statusItems.length > 0 && (
+            <div>
+              <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-widest mb-3">Status</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {statusItems.map((s) => (
+                  <div key={s.label} className="rounded-xl border border-[#f0f0f0] bg-[#fafafa] px-4 py-3">
+                    <p className="text-[11px] text-[#86868b] mb-1">{s.label}</p>
+                    <p className="text-sm font-semibold text-[#1d1d1f]">{s.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Key dates */}
+          {dateItems.length > 0 && (
+            <div>
+              <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-widest mb-3">Key dates</p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {dateItems.map((s) => (
+                  <div key={s.label} className="rounded-xl border border-[#f0f0f0] bg-[#fafafa] px-4 py-3">
+                    <p className="text-[11px] text-[#86868b] mb-1">{s.label}</p>
+                    <p className="text-sm font-semibold text-[#1d1d1f]">{s.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Tracking */}
+          {deal.tracking_number && (
+            <div>
+              <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-widest mb-3">Shipping</p>
+              <div className="rounded-xl border border-[#f0f0f0] bg-[#fafafa] px-4 py-3 flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-[11px] text-[#86868b] mb-1">Tracking number</p>
+                  <p className="text-sm font-semibold text-[#1d1d1f]">{deal.tracking_number}</p>
+                </div>
+                {deal.delivery_date && (
+                  <div className="text-right">
+                    <p className="text-[11px] text-[#86868b] mb-1">Delivered</p>
+                    <p className="text-sm font-semibold text-[#1d1d1f]">{fmtDate(deal.delivery_date)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Linked invoices */}
+          {linkedInvoices.length > 0 && (
+            <div>
+              <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-widest mb-3">Invoices</p>
+              <div className="space-y-2">
+                {linkedInvoices.map(({ inv, type }) => {
+                  const content = (
+                    <>
+                      <div>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="text-sm font-semibold text-[#1d1d1f]">{inv.number}</p>
+                          <span className="text-[10px] text-[#86868b]">{type}</span>
+                          <StatusBadge status={inv.status} />
+                        </div>
+                        <p className="text-xs text-[#86868b]">
+                          {inv.due_date && <>Due {inv.due_date} · </>}
+                          {inv.currency} {Number(inv.total).toLocaleString("en-GB", { minimumFractionDigits: 2 })}
+                          {Number(inv.balance) > 0 && inv.status !== "paid" && (
+                            <> · Balance: {Number(inv.balance).toLocaleString("en-GB", { minimumFractionDigits: 2 })}</>
+                          )}
+                        </p>
+                      </div>
+                      {inv.invoice_url && <span className="text-xs text-[#0071e3] shrink-0">View →</span>}
+                    </>
+                  );
+                  return inv.invoice_url ? (
+                    <a key={inv.id} href={inv.invoice_url} target="_blank" rel="noopener noreferrer"
+                      className="rounded-xl border border-[#f0f0f0] bg-[#fafafa] px-4 py-3 flex items-center justify-between gap-3 hover:border-[#0071e3] transition-colors">
+                      {content}
+                    </a>
+                  ) : (
+                    <div key={inv.id} className="rounded-xl border border-[#f0f0f0] bg-[#fafafa] px-4 py-3 flex items-center justify-between gap-3">
+                      {content}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+    </div>
+  );
+}
+
 // ─── Deal card (overview — compact progress + brief) ──────────────────────────
 
 function DealCard({ deal, authHeaders, onRefresh, onTabChange }: { deal: Deal; authHeaders: any; onRefresh: () => void; onTabChange: (t: TabId) => void }) {
-  const needsAction = deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked" || deal.stage === "Initial Brief";
+  const needsBrief = deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked" || deal.stage === "Feasibility Review";
+  const isProposal = deal.stage === "Proposal Sent";
 
   return (
     <div className="rounded-2xl border border-[#d2d2d7] bg-white overflow-hidden">
@@ -1001,7 +1388,9 @@ function DealCard({ deal, authHeaders, onRefresh, onTabChange }: { deal: Deal; a
             {deal.product_format && <p className="text-sm text-[#86868b] mt-0.5">{deal.product_format}</p>}
           </div>
           <span className={`shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-full mt-1 ${
-            deal.stage === "Discovery Call Booked" ? "bg-blue-50 text-[#0071e3]" : "bg-[#f5f5f7] text-[#86868b]"
+            isProposal ? "bg-[#0071e3]/10 text-[#0071e3]" :
+            deal.stage === "Discovery Call Booked" ? "bg-blue-50 text-[#0071e3]" :
+            "bg-[#f5f5f7] text-[#86868b]"
           }`}>{deal.current_stage}</span>
         </div>
         <div className="relative mb-2">
@@ -1015,8 +1404,24 @@ function DealCard({ deal, authHeaders, onRefresh, onTabChange }: { deal: Deal; a
         </div>
       </button>
 
+      {/* Proposal ready — compact prompt, full proposal on My Orders */}
+      {isProposal && (
+        <div className="border-t border-[#0071e3]/10 bg-[#0071e3]/5 px-6 py-3.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#0071e3] animate-pulse shrink-0" />
+            <p className="text-sm font-medium text-[#0071e3]">Your proposal is ready</p>
+          </div>
+          <button
+            onClick={() => onTabChange("orders")}
+            className="shrink-0 text-xs font-semibold text-[#0071e3] hover:underline"
+          >
+            Review & accept →
+          </button>
+        </div>
+      )}
+
       {/* Brief + booking section */}
-      {needsAction && <BriefSection deal={deal} authHeaders={authHeaders} onRefresh={onRefresh} />}
+      {needsBrief && <BriefSection deal={deal} authHeaders={authHeaders} onRefresh={onRefresh} />}
     </div>
   );
 }
@@ -1110,24 +1515,7 @@ function OverviewTab({ deals, invoices, onTabChange, authHeaders, onRefresh }: {
 
 // ─── Orders tab ───────────────────────────────────────────────────────────────
 
-function OrdersTab({ deals, authHeaders, onRefresh }: { deals: Deal[]; authHeaders: any; onRefresh: () => void }) {
-  const [accepting, setAccepting] = useState(false);
-
-  const handleAccept = async (dealId: string) => {
-    if (!confirm("Accept this proposal?")) return;
-    setAccepting(true);
-    try {
-      const res = await fetch("/api/portal/accept-proposal", {
-        method: "POST",
-        headers: { ...(authHeaders as Record<string, string>), "Content-Type": "application/json" },
-        body: JSON.stringify({ dealId }),
-      });
-      const data = await res.json();
-      if (data.success) onRefresh();
-    } finally {
-      setAccepting(false);
-    }
-  };
+function OrdersTab({ deals, invoices, authHeaders, onRefresh }: { deals: Deal[]; invoices: Invoice[]; authHeaders: any; onRefresh: () => void }) {
 
   if (deals.length === 0) {
     return (
@@ -1143,8 +1531,9 @@ function OrdersTab({ deals, authHeaders, onRefresh }: { deals: Deal[]; authHeade
   return (
     <div className="space-y-5">
       {deals.map((deal) => {
-        const isProposalSent = deal.stage === "Proposal Sent";
-        const isComplete = deal.stage === "Closed / Completed";
+        const isProposalSent  = deal.stage === "Proposal Sent";
+        const isComplete      = deal.stage === "Closed / Completed";
+        const isInProduction  = PRODUCTION_STAGE_SET.has(deal.stage);
 
         return (
           <div key={deal.id} className="rounded-2xl border border-[#d2d2d7] bg-white overflow-hidden">
@@ -1199,38 +1588,18 @@ function OrdersTab({ deals, authHeaders, onRefresh }: { deals: Deal[]; authHeade
               </div>
             </div>
 
-            {/* Pricing row */}
-            {deal.wholesale_price && (
-              <div className="px-6 pb-5 grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                {[
-                  { label: "Cost / unit",    value: fmt(deal.wholesale_price)  },
-                  { label: "Suggested RRP",  value: fmt(deal.suggested_rrp)    },
-                  { label: "Order total",    value: fmt(deal.quote_total, 0)   },
-                  { label: "Your margin",    value: deal.client_margin ? `${deal.client_margin}%` : "—" },
-                ].map((row) => (
-                  <div key={row.label}>
-                    <p className="text-[11px] text-[#86868b] mb-0.5">{row.label}</p>
-                    <p className="font-semibold text-[#1d1d1f]">{row.value}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Accept proposal */}
+            {/* Proposal section — full detail + accept/feedback */}
             {isProposalSent && (
-              <div className="px-6 pb-6">
-                <button
-                  onClick={() => handleAccept(deal.id)}
-                  disabled={accepting}
-                  className="w-full h-11 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-60 transition-colors"
-                >
-                  {accepting ? "Processing…" : "Accept Proposal"}
-                </button>
-              </div>
+              <ProposalSection deal={deal} authHeaders={authHeaders} onRefresh={onRefresh} />
             )}
 
-            {/* Pre-call brief — New Enquiry / Discovery Call Booked / Initial Brief */}
-            {(deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked" || deal.stage === "Initial Brief") && (
+            {/* Production section — milestones, dates, invoices */}
+            {isInProduction && (
+              <ProductionSection deal={deal} invoices={invoices} />
+            )}
+
+            {/* Pre-call brief — New Enquiry / Discovery Call Booked / Feasibility Review */}
+            {(deal.stage === "New Enquiry" || deal.stage === "Discovery Call Booked" || deal.stage === "Feasibility Review") && (
               <BriefSection deal={deal} authHeaders={authHeaders} onRefresh={onRefresh} />
             )}
           </div>
@@ -1497,7 +1866,11 @@ function DocumentsTab({ deals }: { deals: Deal[] }) {
 
 // ─── Invoices tab ─────────────────────────────────────────────────────────────
 
-function InvoicesTab({ invoices }: { invoices: Invoice[] }) {
+function InvoicesTab({ invoices, deals }: { invoices: Invoice[]; deals: Deal[] }) {
+  // Build lookup: deal_id → deal name
+  const dealNames: Record<string, string> = {};
+  for (const deal of deals) dealNames[deal.id] = deal.name;
+
   if (invoices.length === 0) {
     return (
       <div className="rounded-2xl border border-[#d2d2d7] bg-white p-16 text-center">
@@ -1508,29 +1881,54 @@ function InvoicesTab({ invoices }: { invoices: Invoice[] }) {
 
   return (
     <div className="space-y-3">
-      {invoices.map((inv) => (
-        <div key={inv.id} className="rounded-2xl border border-[#d2d2d7] bg-white px-6 py-5 flex items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-0.5">
-              <p className="font-semibold text-[#1d1d1f] text-sm">{inv.number}</p>
-              <StatusBadge status={inv.status} />
-            </div>
-            <p className="text-xs text-[#86868b]">
-              Issued {inv.date}
-              {inv.due_date && <> · Due {inv.due_date}</>}
-              {inv.reference && <> · Ref: {inv.reference}</>}
-            </p>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="font-semibold text-[#1d1d1f]">{inv.currency} {Number(inv.total).toLocaleString("en-GB", { minimumFractionDigits: 2 })}</p>
-            {Number(inv.balance) > 0 && inv.status !== "paid" && (
-              <p className="text-xs text-[#86868b] mt-0.5">
-                Balance: {inv.currency} {Number(inv.balance).toLocaleString("en-GB", { minimumFractionDigits: 2 })}
+      {invoices.map((inv) => {
+        const dealName = inv.deal_id ? dealNames[inv.deal_id] : null;
+        const row = (
+          <div className="flex items-center justify-between gap-4 w-full">
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="font-semibold text-[#1d1d1f] text-sm">{inv.number}</p>
+                <StatusBadge status={inv.status} />
+                {inv.invoice_type && (
+                  <span className="text-[10px] text-[#86868b] font-medium">{inv.invoice_type}</span>
+                )}
+              </div>
+              {dealName && (
+                <p className="text-xs font-medium text-[#1d1d1f] mb-0.5">{dealName}</p>
+              )}
+              <p className="text-xs text-[#86868b]">
+                Issued {inv.date}
+                {inv.due_date && <> · Due {inv.due_date}</>}
+                {!inv.deal_id && inv.reference && <> · Ref: {inv.reference}</>}
               </p>
-            )}
+            </div>
+            <div className="text-right shrink-0">
+              <p className="font-semibold text-[#1d1d1f]">{inv.currency} {Number(inv.total).toLocaleString("en-GB", { minimumFractionDigits: 2 })}</p>
+              {Number(inv.balance) > 0 && inv.status !== "paid" && (
+                <p className="text-xs text-[#86868b] mt-0.5">
+                  Balance: {Number(inv.balance).toLocaleString("en-GB", { minimumFractionDigits: 2 })}
+                </p>
+              )}
+              {inv.invoice_url && <p className="text-xs text-[#0071e3] mt-1">View →</p>}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+        return inv.invoice_url ? (
+          <a
+            key={inv.id}
+            href={inv.invoice_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-2xl border border-[#d2d2d7] bg-white px-6 py-5 flex items-center justify-between gap-4 hover:border-[#0071e3] transition-colors block"
+          >
+            {row}
+          </a>
+        ) : (
+          <div key={inv.id} className="rounded-2xl border border-[#d2d2d7] bg-white px-6 py-5 flex items-center justify-between gap-4">
+            {row}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1629,10 +2027,10 @@ export function ClientPortal({ className = "" }: { className?: string }) {
       ) : (
         <>
           {activeTab === "overview"   && <OverviewTab  deals={deals} invoices={invoices} onTabChange={setActiveTab} authHeaders={authHeaders} onRefresh={fetchData} />}
-          {activeTab === "orders"     && <OrdersTab    deals={deals} authHeaders={authHeaders} onRefresh={fetchData} />}
+          {activeTab === "orders"     && <OrdersTab    deals={deals} invoices={invoices} authHeaders={authHeaders} onRefresh={fetchData} />}
           {activeTab === "catalogue"  && <CatalogueTab />}
           {activeTab === "documents"  && <DocumentsTab deals={deals} />}
-          {activeTab === "invoices"   && <InvoicesTab  invoices={invoices} />}
+          {activeTab === "invoices"   && <InvoicesTab  invoices={invoices} deals={deals} />}
         </>
       )}
     </div>
