@@ -218,7 +218,7 @@ export async function sendBookingConfirmedEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Label Origin <onboarding@resend.dev>",
+      from: "Label Origin <hello@labelorigin.com>",
       to:   [toEmail],
       subject: `Your discovery call is confirmed — ${formattedDate}`,
       html,
@@ -307,7 +307,7 @@ export async function sendBriefAcknowledgementEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Label Origin <onboarding@resend.dev>",
+      from: "Label Origin <hello@labelorigin.com>",
       to:   [toEmail],
       subject: "We've received your brief — our team will be in touch",
       html,
@@ -409,7 +409,7 @@ export async function sendFollowUpEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Label Origin <onboarding@resend.dev>",
+      from: "Label Origin <hello@labelorigin.com>",
       to:   [toEmail],
       subject: "Still interested? Book your free discovery call",
       html,
@@ -556,7 +556,7 @@ export async function sendProposalEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Label Origin <onboarding@resend.dev>",
+      from: "Label Origin <hello@labelorigin.com>",
       to:   [toEmail],
       subject: `Your proposal is ready — ${deal.dealName}`,
       html,
@@ -695,7 +695,7 @@ export async function sendDepositInvoiceEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Label Origin <onboarding@resend.dev>",
+      from: "Label Origin <hello@labelorigin.com>",
       to:   [toEmail],
       subject: `Deposit invoice ready — ${deal.dealName}`,
       html,
@@ -834,7 +834,7 @@ export async function sendFinalInvoiceEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Label Origin <onboarding@resend.dev>",
+      from: "Label Origin <hello@labelorigin.com>",
       to:   [toEmail],
       subject: `Final balance invoice ready — ${deal.dealName}`,
       html,
@@ -948,7 +948,7 @@ export async function sendMagicLinkEmail(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Label Origin <onboarding@resend.dev>",
+      from: "Label Origin <hello@labelorigin.com>",
       to:   [toEmail],
       subject: "Your Label Origin portal access link",
       html,
