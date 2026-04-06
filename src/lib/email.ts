@@ -580,13 +580,11 @@ export async function sendDepositInvoiceEmail(
     invoiceTotal: number;
     dueDate: string;
     currency: string;
-    invoiceUrl?: string | null;
-  },
-  pdfBuffer?: Buffer | null
+  }
 ): Promise<{ success: boolean }> {
   const firstName = name?.split(" ")[0] || name || "";
   const siteUrl = process.env.SITE_URL || "https://labelorigin.com";
-  const portalUrl = deal.invoiceUrl || `${siteUrl}/login`;
+  const portalUrl = `${siteUrl}/login`;
 
   const formattedTotal = `${deal.currency} ${Number(deal.invoiceTotal).toLocaleString("en-GB", { minimumFractionDigits: 2 })}`;
   const formattedDue = deal.dueDate
@@ -654,7 +652,7 @@ export async function sendDepositInvoiceEmail(
                   <td style="border-radius:12px;background:#0071e3;">
                     <a href="${portalUrl}"
                        style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:500;color:#ffffff;text-decoration:none;letter-spacing:-0.01em;">
-                      View &amp; pay invoice →
+                      View invoice in portal →
                     </a>
                   </td>
                 </tr>
@@ -726,13 +724,11 @@ export async function sendFinalInvoiceEmail(
     invoiceTotal: number;
     dueDate: string;
     currency: string;
-    invoiceUrl?: string | null;
-  },
-  pdfBuffer?: Buffer | null
+  }
 ): Promise<{ success: boolean }> {
   const firstName = name?.split(" ")[0] || name || "";
   const siteUrl = process.env.SITE_URL || "https://labelorigin.com";
-  const portalUrl = deal.invoiceUrl || `${siteUrl}/login`;
+  const portalUrl = `${siteUrl}/login`;
 
   const formattedTotal = `${deal.currency} ${Number(deal.invoiceTotal).toLocaleString("en-GB", { minimumFractionDigits: 2 })}`;
   const formattedDue = deal.dueDate
@@ -800,7 +796,7 @@ export async function sendFinalInvoiceEmail(
                   <td style="border-radius:12px;background:#0071e3;">
                     <a href="${portalUrl}"
                        style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:500;color:#ffffff;text-decoration:none;letter-spacing:-0.01em;">
-                      View &amp; pay invoice →
+                      View invoice in portal →
                     </a>
                   </td>
                 </tr>

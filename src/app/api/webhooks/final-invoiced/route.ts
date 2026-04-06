@@ -14,7 +14,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { crmGet, booksGet } from "@/lib/zoho";
 import { sendFinalInvoiceEmail } from "@/lib/email";
-import { generateInvoicePDF } from "@/lib/pdf";
 
 export async function POST(req: NextRequest) {
   try {
@@ -89,42 +88,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No final invoice found" }, { status: 404 });
     }
 
-    // Fetch invoice detail (URL + line items for PDF)
-    let invoiceUrl: string | null = null;
-    let pdfBuffer: Buffer | null = null;
-    try {
-      const detail = await booksGet(`invoices/${finalInv.invoice_id}`);
-      const inv = detail?.invoice;
-      invoiceUrl = inv?.invoice_url || null;
-
-      pdfBuffer = await generateInvoicePDF({
-        invoiceNumber:  finalInv.invoice_number,
-        date:           finalInv.date,
-        dueDate:        finalInv.due_date,
-        referenceNumber: finalInv.reference_number,
-        currency:       finalInv.currency_code,
-        currencySymbol: inv?.currency_symbol || "£",
-        clientName:     name,
-        clientAddress:  inv?.billing_address?.address || "",
-        lineItems: (inv?.line_items || []).map((li: any) => ({
-          name:          li.name,
-          description:   li.description,
-          quantity:      li.quantity,
-          rate:          li.rate,
-          itemTotal:     li.item_total,
-          taxPercentage: li.tax_percentage,
-        })),
-        subTotal:   inv?.sub_total  ?? finalInv.total,
-        taxTotal:   inv?.tax_total  ?? 0,
-        total:      inv?.total      ?? finalInv.total,
-        balanceDue: inv?.balance    ?? finalInv.balance,
-        notes:      inv?.notes      || "",
-        terms:      inv?.terms      || "",
-      });
-    } catch (e: any) {
-      console.warn("[webhook/final-invoiced] PDF/detail fetch failed:", e?.message);
-    }
-
     // ── Send email ─────────────────────────────────────────────────────────
     await sendFinalInvoiceEmail(toEmail, name, {
       dealName:      deal.Deal_Name,
@@ -132,8 +95,7 @@ export async function POST(req: NextRequest) {
       invoiceTotal:  finalInv.total,
       dueDate:       finalInv.due_date,
       currency:      finalInv.currency_code,
-      invoiceUrl,
-    }, pdfBuffer);
+    });
 
     console.log(`[webhook/final-invoiced] Email sent to ${toEmail} for deal ${deal.Deal_Name}`);
     return NextResponse.json({ success: true });
