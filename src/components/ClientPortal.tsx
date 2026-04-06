@@ -31,6 +31,7 @@ interface Deal {
   completed_stages: string[];
   current_stage: string;
   upcoming_stages: string[];
+  brief_submitted: boolean;
 }
 
 interface Invoice {
@@ -772,7 +773,7 @@ function BriefSection({ deal, authHeaders, onRefresh }: { deal: Deal; authHeader
   const [briefOpen, setBriefOpen] = useState(false);
   const [step,      setStep]      = useState(0);
   const [saving,    setSaving]    = useState(false);
-  const [saved,     setSaved]     = useState(false);
+  const [saved,     setSaved]     = useState(deal.brief_submitted);
   const [skipping,  setSkipping]  = useState(false);
 
   const [answers, setAnswers] = useState({

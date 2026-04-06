@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
     const dealsRes = await crmSearch(
       "Deals",
       `(Contact_Name.id:equals:${session.contactId})`,
-      "Deal_Name,Stage,Product_Format,Quote_Total,Wholesale_Price_Per_Unit,Suggested_RRP,Market_Position,MOQ,Created_Time,Modified_Time,Closing_Date,Cost_Per_Unit,Client_Margin_Pct,Gummies_Per_Unit"
+      "Deal_Name,Stage,Product_Format,Quote_Total,Wholesale_Price_Per_Unit,Suggested_RRP,Market_Position,MOQ,Created_Time,Modified_Time,Closing_Date,Cost_Per_Unit,Client_Margin_Pct,Gummies_Per_Unit,Brief_Product_Name"
     );
 
     if (!dealsRes?.data) {
@@ -92,6 +92,7 @@ export async function GET(req: NextRequest) {
         completed_stages: STAGE_ORDER.slice(0, stageIndex),
         current_stage: stage,
         upcoming_stages: STAGE_ORDER.slice(stageIndex + 1),
+        brief_submitted: !!deal.Brief_Product_Name,
       };
     });
 
