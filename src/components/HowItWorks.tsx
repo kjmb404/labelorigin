@@ -41,25 +41,25 @@ const features = [
 
 export default function HowItWorks() {
   return (
-    <section id="platform" className="py-16 md:py-32">
+    <section id="platform" className="py-16 md:py-32 bg-[#1d1d1f]">
       <div className="max-w-[980px] mx-auto px-4 sm:px-6">
         <div className="text-center mb-6">
-          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
+          <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-white">
             Our Platform.
           </h2>
         </div>
-        <p className="text-center text-muted text-lg md:text-xl max-w-2xl mx-auto mb-20">
+        <p className="text-center text-[#86868b] text-lg md:text-xl max-w-2xl mx-auto mb-20">
           Built for brands that want to lead their category.
         </p>
 
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8 md:gap-x-8 md:gap-y-14">
           {features.map((feature) => (
             <div key={feature.title}>
-              <feature.icon className="text-muted mb-3" size={22} strokeWidth={1.5} />
-              <h3 className="text-sm md:text-lg font-semibold text-foreground mb-1 md:mb-2">
+              <feature.icon className="text-[#6e6e73] mb-3" size={22} strokeWidth={1.5} />
+              <h3 className="text-sm md:text-lg font-semibold text-white mb-1 md:mb-2">
                 {feature.title}
               </h3>
-              <p className="text-muted text-xs md:text-sm leading-relaxed">{feature.description}</p>
+              <p className="text-[#86868b] text-xs md:text-sm leading-relaxed">{feature.description}</p>
             </div>
           ))}
         </div>
