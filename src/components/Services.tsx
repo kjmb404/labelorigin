@@ -1,117 +1,58 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
-import { motion, AnimatePresence } from "motion/react";
+import { AnimatedFeatureCard } from "@/components/ui/feature-card-1";
 
-const services = [
+const features = [
   {
-    value: "npd",
-    label: "NPD",
-    title: "New Product Development",
-    description:
-      "From category analysis and formulation brief through to prototype refinement and regulatory review. We run the full product development process so you can stay focused on brand and sales.",
-    img: "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=1400&auto=format&fit=crop&q=80",
-    alt: "Scientist formulating a new wellness supplement in a UK laboratory",
+    index: "001",
+    tag: "Formulation",
+    title: "Bespoke active stacks formulated by our in-house technical team — capsules, gummies, powders and more.",
+    imageSrc: "https://images.unsplash.com/photo-1576086213369-97a306d36557?w=800&auto=format&fit=crop&q=80",
+    color: "green" as const,
   },
   {
-    value: "branding",
-    label: "Design",
-    title: "Branding & Packaging",
-    description:
-      "Stand-out packaging and brand identity that communicates the quality of your product. Packaging that earns shelf space and consumer trust.",
-    img: "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=1400&auto=format&fit=crop&q=80",
-    alt: "Premium wellness product packaging design",
+    index: "002",
+    tag: "Manufacturing",
+    title: "ISO 9001 accredited, UK-based GMP manufacturing. 500 to 500,000 units with full batch traceability.",
+    imageSrc: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=800&auto=format&fit=crop&q=80",
+    color: "blue" as const,
   },
   {
-    value: "manufacturing",
-    label: "Production",
-    title: "In-House Manufacturing",
-    description:
-      "ISO9001 accredited, UK-based manufacturing with full traceability. Complex active stacks handled with precision dosing and format integrity.",
-    img: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=1400&auto=format&fit=crop&q=80",
-    alt: "ISO9001 accredited UK manufacturing facility production line",
-  },
-  {
-    value: "testing",
-    label: "QA",
-    title: "Third-Party Testing",
-    description:
-      "Every batch independently tested by UKAS-accredited labs. Full Certificate of Analysis — sharable with retailers and buyers.",
-    img: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=1400&auto=format&fit=crop&q=80",
-    alt: "UKAS-accredited laboratory quality assurance testing",
+    index: "003",
+    tag: "Full Service",
+    title: "NPD strategy, label design, UKAS-accredited QA and fulfilment — everything under one roof.",
+    imageSrc: "https://images.unsplash.com/photo-1532094349884-543559b4420e?w=800&auto=format&fit=crop&q=80",
+    color: "dark" as const,
   },
 ];
 
 export default function Services() {
-  const [active, setActive] = useState("npd");
-  const current = services.find((s) => s.value === active)!;
-
   return (
-    <section id="services" className="py-24 md:py-32 bg-white">
+    <section id="services" className="py-24 md:py-32 bg-[#f5f5f7]">
       <div className="max-w-[980px] mx-auto px-4 sm:px-6">
-
-        {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-16">
           <p className="text-xs font-medium text-[#86868b] uppercase tracking-[0.3em] mb-3">
             (What we do)
           </p>
           <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-[#1d1d1f]">
             Services.
           </h2>
-          <p className="text-[#86868b] text-lg mt-4">Everything you need to launch.</p>
+          <p className="text-[#86868b] text-lg mt-4">
+            Everything you need to launch — under one roof.
+          </p>
         </div>
 
-        {/* Card */}
-        <div className="rounded-3xl overflow-hidden relative">
-
-          {/* Image */}
-          <div className="relative h-[380px] md:h-[480px] w-full">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={active}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.4 }}
-                className="absolute inset-0"
-              >
-                <Image
-                  src={current.img}
-                  alt={current.alt}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 980px) 100vw, 980px"
-                  priority={active === "npd"}
-                />
-              </motion.div>
-            </AnimatePresence>
-            <div className="absolute inset-0 bg-gradient-to-t from-[#1d1d1f]/80 via-transparent to-transparent" />
-          </div>
-
-          {/* Tab panel */}
-          <div className="absolute bottom-0 left-0 right-0 grid grid-cols-2 md:grid-cols-4 bg-[#1d1d1f]/70 backdrop-blur-md border-t border-white/10">
-            {services.map((s) => (
-              <button
-                key={s.value}
-                onClick={() => setActive(s.value)}
-                className={`text-left p-5 border-r border-white/10 last:border-r-0 transition-all duration-200 cursor-pointer ${
-                  active === s.value ? "opacity-100 bg-white/5" : "opacity-40 hover:opacity-70"
-                }`}
-              >
-                <span className="block text-[10px] font-semibold text-[#0071e3] uppercase tracking-widest mb-1.5">
-                  {s.label}
-                </span>
-                <h3 className="text-sm font-semibold text-white leading-snug mb-1.5">
-                  {s.title}
-                </h3>
-                <p className="text-[11px] text-white/50 leading-relaxed line-clamp-2 hidden md:block">
-                  {s.description}
-                </p>
-              </button>
-            ))}
-          </div>
-
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 justify-items-center">
+          {features.map((feature) => (
+            <AnimatedFeatureCard
+              key={feature.index}
+              index={feature.index}
+              tag={feature.tag}
+              title={feature.title}
+              imageSrc={feature.imageSrc}
+              color={feature.color}
+            />
+          ))}
         </div>
       </div>
     </section>

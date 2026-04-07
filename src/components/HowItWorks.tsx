@@ -41,7 +41,7 @@ const features = [
 
 export default function HowItWorks() {
   return (
-    <section id="platform" className="py-24 md:py-32">
+    <section id="platform" className="py-16 md:py-32">
       <div className="max-w-[980px] mx-auto px-4 sm:px-6">
         <div className="text-center mb-6">
           <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-foreground">
@@ -52,14 +52,14 @@ export default function HowItWorks() {
           Built for brands that want to lead their category.
         </p>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-14">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-8 md:gap-x-8 md:gap-y-14">
           {features.map((feature) => (
             <div key={feature.title}>
-              <feature.icon className="text-muted mb-4" size={28} strokeWidth={1.5} />
-              <h3 className="text-lg font-semibold text-foreground mb-2">
+              <feature.icon className="text-muted mb-3" size={22} strokeWidth={1.5} />
+              <h3 className="text-sm md:text-lg font-semibold text-foreground mb-1 md:mb-2">
                 {feature.title}
               </h3>
-              <p className="text-muted text-sm leading-relaxed">{feature.description}</p>
+              <p className="text-muted text-xs md:text-sm leading-relaxed">{feature.description}</p>
             </div>
           ))}
         </div>

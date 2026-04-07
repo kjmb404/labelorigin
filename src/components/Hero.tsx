@@ -11,7 +11,6 @@ const navLinks = [
   { label: "Build a brief", href: "#brief" },
   { label: "Services", href: "#services" },
   { label: "Formats", href: "#formats" },
-  { label: "Instant quote", href: "/quote" },
   { label: "Contact", href: "#contact" },
 ];
 
