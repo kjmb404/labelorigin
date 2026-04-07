@@ -80,6 +80,9 @@ export default function Hero() {
                 {link.label}
               </a>
             ))}
+            <a href="/login" className="block text-sm text-[#86868b] hover:text-[#1d1d1f]" onClick={() => setMenuOpen(false)}>
+              Client login
+            </a>
             <a href="#contact" className="block text-sm text-[#0071e3]" onClick={() => setMenuOpen(false)}>
               Work with us
             </a>
