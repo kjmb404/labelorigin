@@ -21,20 +21,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Look up contact in Zoho CRM
+    // Look up in Zoho CRM — check Contacts first, then Leads
     const contactSearch = await crmSearch(
       "Contacts",
       `(Email:equals:${email})`,
       "id,Full_Name,Email,First_Name"
     );
 
-    if (!contactSearch?.data?.length) {
-      // Security: don't reveal whether the email exists
-      // In dev, hint that the email isn't in CRM so it's easier to debug
+    let record = contactSearch?.data?.[0] ?? null;
+
+    if (!record) {
+      const leadSearch = await crmSearch(
+        "Leads",
+        `(Email:equals:${email})`,
+        "id,Full_Name,Email,First_Name,Last_Name"
+      );
+      record = leadSearch?.data?.[0] ?? null;
+    }
+
+    if (!record) {
       if (isDev) {
         return NextResponse.json({
           success: false,
-          error: "[Dev] No Zoho CRM contact found for this email. Add the contact in CRM first, or use an email that exists.",
+          error: "[Dev] No Zoho CRM contact or lead found for this email. Add the record in CRM first, or use an email that exists.",
         });
       }
       return NextResponse.json({
@@ -43,9 +52,9 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const contact    = contactSearch.data[0];
-    const contactId  = contact.id;
-    const contactName = contact.First_Name || contact.Full_Name || "";
+    const contact     = record;
+    const contactId   = contact.id;
+    const contactName = contact.First_Name || contact.Full_Name || contact.Last_Name || "";
 
     // Generate self-contained signed token (no server-side store needed)
     const token = generateToken(email, contactId);
