@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useCallback, useState } from "react"
+import { useEffect, useRef, useCallback } from "react"
 import createGlobe from "cobe"
 
 interface InteractiveMarker {
@@ -36,8 +36,6 @@ export function GlobeInteractive({
   const phiOffsetRef = useRef(0)
   const thetaOffsetRef = useRef(0)
   const isPausedRef = useRef(false)
-  const [expanded, setExpanded] = useState<string | null>(null)
-
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     pointerInteracting.current = { x: e.clientX, y: e.clientY }
     if (canvasRef.current) canvasRef.current.style.cursor = "grabbing"
@@ -130,12 +128,6 @@ export function GlobeInteractive({
 
   return (
     <div className={`relative aspect-square select-none ${className}`}>
-      <style>{`
-        @keyframes fade-slide-in {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 0.8; transform: translateY(0); }
-        }
-      `}</style>
       <canvas
         ref={canvasRef}
         onPointerDown={handlePointerDown}
@@ -144,48 +136,6 @@ export function GlobeInteractive({
           transition: "opacity 1.2s ease", borderRadius: "50%", touchAction: "none",
         }}
       />
-      {markers.map((m) => (
-        <div
-          key={m.id}
-          onClick={() => setExpanded(expanded === m.id ? null : m.id)}
-          style={{
-            position: "absolute",
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            positionAnchor: `--cobe-${m.id}` as any,
-            bottom: "anchor(top)",
-            left: "anchor(center)",
-            translate: "-50% 0",
-            marginBottom: 6,
-            display: "flex",
-            flexDirection: "column" as const,
-            alignItems: "center",
-            padding: expanded === m.id ? "0.4rem 0.6rem" : "0.3rem 0.5rem",
-            background: "#1a1a2e",
-            color: "#fff",
-            borderRadius: 3,
-            cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-            opacity: `var(--cobe-visible-${m.id}, 0)`,
-            filter: `blur(calc((1 - var(--cobe-visible-${m.id}, 0)) * 8px))`,
-            transition: "opacity 0.4s, filter 0.4s, transform 0.2s, padding 0.2s",
-            zoom: expanded === m.id ? 1.05 : 1,
-          }}
-        >
-          <span style={{
-            fontFamily: "monospace", fontSize: "0.6rem", fontWeight: 600,
-            letterSpacing: "0.08em", textTransform: "uppercase" as const,
-          }}>{m.name}</span>
-          {expanded === m.id && (
-            <span style={{
-              fontFamily: "system-ui, sans-serif", fontSize: "0.55rem",
-              opacity: 0.8, marginTop: "0.15rem",
-              animation: "fade-slide-in 0.2s ease-out",
-            }}>
-              {m.users.toLocaleString()} users
-            </span>
-          )}
-        </div>
-      ))}
     </div>
   )
 }
