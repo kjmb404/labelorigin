@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   title: "Label Origin | The Future of Health & Wellness",
   description:
     "Premium functional gummies and wellness products. Sophisticated formulations, in-house manufacturing, uncompromising QA. Manchester, UK.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
